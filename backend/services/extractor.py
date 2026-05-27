@@ -125,9 +125,10 @@ def extract_pdf(pdf_path: str, ocr_threshold: int = OCR_THRESHOLD) -> list[dict]
 # 2. Formula-heavy page missing equations
 # 3. OCR symbols absent from extracted text
         needs_ocr = (
-            meaningful < ocr_threshold
+            meaningful < 30
             or (
                 looks_like_formula_page
+                and meaningful < 80
                 and not has_formula(pymupdf_text)
                 )
             )
@@ -189,7 +190,7 @@ def _ocr_page(page: fitz.Page) -> str:
         )
     """OCR optimized for Beamer slides with formulas."""
 
-    zoom = 5.0  # very high resolution
+    zoom = 3.0  # very high resolution
 
     mat = fitz.Matrix(zoom, zoom)
 
@@ -246,9 +247,9 @@ def _ocr_page(page: fitz.Page) -> str:
     # DEBUG SAVE (IMPORTANT)
     # -----------------------------------------
 
-    img.save(
-        f"ocr_debug_page_{page.number+1}.png"
-    )
+    #img.save(
+    #    f"ocr_debug_page_{page.number+1}.png"
+    #)
 # -----------------------------------------
 # OCR CONFIG (FORMULA OPTIMIZED)
 # -----------------------------------------
