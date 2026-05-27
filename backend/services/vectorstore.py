@@ -31,14 +31,15 @@ def _get_embedder():
         from sentence_transformers import SentenceTransformer
 
         _embedder = SentenceTransformer(
-            "all-MiniLM-L6-v2"
+            "all-MiniLM-L6-v2",
+            device="cpu"
         )
 
         print("EMBEDDER LOADED")
 
     return _embedder
 
-    return _embedder
+
 _client: chromadb.ClientAPI | None = None
 
 def _get_client() -> chromadb.ClientAPI:
@@ -142,25 +143,25 @@ def semantic_search(
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
-def _embed(texts: list[str]) -> list[list[float]]:
-    from sentence_transformers import SentenceTransformer
-    import gc
+def _embed(
+    texts: list[str]
+) -> list[list[float]]:
 
-    embedder = SentenceTransformer(
-        "all-MiniLM-L6-v2",
-        device="cpu"
+    embedder = (
+        _get_embedder()
     )
 
-    embeddings = embedder.encode(
-        texts,
-        convert_to_numpy=True,
-        batch_size=4,
+    embeddings = (
+        embedder.encode(
+            texts,
+            convert_to_numpy=True,
+            batch_size=2,
+        )
     )
 
-    del embedder
-    gc.collect()
-
-    return embeddings.tolist()
+    return (
+        embeddings.tolist()
+    )
 
 
 def _safe_col_name(doc_id: str) -> str:
