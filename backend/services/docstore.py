@@ -27,10 +27,7 @@ UPLOAD_DIR.mkdir(
     exist_ok=True
 )
 
-_META_FILE = (
-    UPLOAD_DIR /
-    "documents.json"
-)
+_META_FILE = (Path("/tmp/documents.json"))
 
 # ── In-memory store ────────────────────────────────────────────────────────
 # doc_id → {

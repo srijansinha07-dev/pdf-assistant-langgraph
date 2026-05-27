@@ -253,11 +253,7 @@ def _ocr_page(page: fitz.Page) -> str:
 # OCR CONFIG (FORMULA OPTIMIZED)
 # -----------------------------------------
 
-    configs = [
-        "--oem 3 --psm 6",
-        "--oem 3 --psm 11",
-        "--oem 3 --psm 4",
-        ]
+    configs = ["--oem 3 --psm 6"]
     best_text = ""
     try:
         for cfg in configs:
