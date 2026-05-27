@@ -71,6 +71,7 @@ class ChatResponse(BaseModel):
 
 class DocumentInfo(BaseModel):
     doc_id:      str
+    user_id:     str
     name:        str
     pages:       int
     status:      IndexStatus

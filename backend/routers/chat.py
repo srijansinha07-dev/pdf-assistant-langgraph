@@ -9,6 +9,7 @@ Now powered by a LangGraph multi-node RAG pipeline
 """
 from __future__ import annotations
 
+from fastapi import Header
 from fastapi import APIRouter, HTTPException
 
 from models import (
@@ -21,11 +22,13 @@ router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 
 @router.post("", response_model=ChatResponse)
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest,x_user_id: str = Header(...)):
     # ── Validate document ─────────────────────────────────────────────────
     info = docstore.get_info(req.doc_id)
     if not info:
         raise HTTPException(404, "Document not found.")
+    if info.user_id != x_user_id:
+        raise HTTPException(403,"Unauthorized.")
     if info.status != IndexStatus.READY:
         raise HTTPException(400, f"Document is not ready (status: {info.status}).")
 

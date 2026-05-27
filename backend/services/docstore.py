@@ -22,6 +22,11 @@ from models import (
     IndexStatus,
 )
 
+UPLOAD_DIR.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
 _META_FILE = (
     UPLOAD_DIR /
     "documents.json"

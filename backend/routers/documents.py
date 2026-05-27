@@ -10,6 +10,7 @@ import base64
 import shutil
 from pathlib import Path
 
+from fastapi import Header
 from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
@@ -26,6 +27,7 @@ router = APIRouter(prefix="/api/documents", tags=["documents"])
 async def upload_pdf(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    x_user_id: str = Header(...),
 ):
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(400, "Only PDF files are accepted.")
@@ -64,37 +66,80 @@ async def upload_pdf(
 # ── List ───────────────────────────────────────────────────────────────────
 
 @router.get("", response_model=list[DocumentInfo])
-async def list_documents():
-    return docstore.list_docs()
+async def list_documents( x_user_id: str = Header(...)):
+    return docstore.list_docs(x_user_id)
 
 
 # ── Single document ────────────────────────────────────────────────────────
 
 @router.get("/{doc_id}", response_model=DocumentInfo)
-async def get_document(doc_id: str):
+async def get_document(doc_id: str,x_user_id: str = Header(...)):
     info = docstore.get_info(doc_id)
     if not info:
         raise HTTPException(404, "Document not found.")
+    if info.user_id != x_user_id:
+        raise HTTPException(403,"Unauthorized.")
     return info
 
 
 # ── Delete ─────────────────────────────────────────────────────────────────
 
 @router.delete("/{doc_id}")
-async def delete_document(doc_id: str):
+async def delete_document(
+    doc_id: str,
+    x_user_id: str = Header(...)
+):
     from services import vectorstore
-    from services.retriever import invalidate_bm25
+    from services.retriever import (
+        invalidate_bm25
+    )
 
-    pdf_path = docstore.get_pdf_path(doc_id)
+    # ── Validate ownership ─────────────────────
+    info = docstore.get_info(
+        doc_id
+    )
+
+    if not info:
+        raise HTTPException(
+            404,
+            "Document not found."
+        )
+
+    if info.user_id != x_user_id:
+        raise HTTPException(
+            403,
+            "Unauthorized."
+        )
+
+    # ── Delete PDF file ────────────────────────
+    pdf_path = (
+        docstore.get_pdf_path(
+            doc_id
+        )
+    )
 
     if pdf_path:
-        Path(pdf_path).unlink(missing_ok=True)
+        Path(pdf_path).unlink(
+            missing_ok=True
+        )
 
-    vectorstore.delete_collection(doc_id)
-    invalidate_bm25(doc_id)
-    docstore.delete_doc(doc_id)
+    # ── Delete embeddings/cache ───────────────
+    vectorstore.delete_collection(
+        doc_id
+    )
 
-    return {"ok": True}
+    invalidate_bm25(
+        doc_id
+    )
+
+    # ── Remove doc from registry ──────────────
+    docstore.delete_doc(
+        doc_id
+    )
+
+    return {
+        "ok": True
+    }
 
 
 # ── Page preview ───────────────────────────────────────────────────────────
