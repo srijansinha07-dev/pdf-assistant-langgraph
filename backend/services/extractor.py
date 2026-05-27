@@ -189,7 +189,7 @@ def _ocr_page(page: fitz.Page) -> str:
         )
     """OCR optimized for Beamer slides with formulas."""
 
-    zoom = 5.0  # very high resolution
+    zoom = 3.0  # very high resolution
 
     mat = fitz.Matrix(zoom, zoom)
 
@@ -255,8 +255,7 @@ def _ocr_page(page: fitz.Page) -> str:
 
     configs = [
         "--oem 3 --psm 6",
-        "--oem 3 --psm 11",
-        "--oem 3 --psm 4",
+
         ]
     best_text = ""
     try:
