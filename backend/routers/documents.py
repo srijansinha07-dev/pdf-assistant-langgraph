@@ -47,6 +47,7 @@ async def upload_pdf(
 
     info = docstore.register(
         doc_id=doc_id,
+        user_id=x_user_id,
         name=file.filename,
         pdf_path=str(pdf_path),
         pages=pages,
