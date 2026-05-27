@@ -351,10 +351,13 @@ def _index_document(doc_id: str, pdf_path: str):
 
         # Index chunks
         print("9. INDEXING CHUNKS")
-        vectorstore.index_chunks(
-            doc_id,
-            chunks
+        print(
+            f"CHUNK COUNT: "
+            f"{len(chunks)}"
         )
+        print("STARTING VECTORSTORE")
+        vectorstore.index_chunks(doc_id,chunks)
+        print("VECTORSTORE DONE")
 
         print("10. INDEXING DONE")
 
