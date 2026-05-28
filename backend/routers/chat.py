@@ -9,6 +9,8 @@ Now powered by a LangGraph multi-node RAG pipeline
 """
 from __future__ import annotations
 
+import os
+
 from fastapi import Header
 from fastapi import APIRouter, HTTPException
 
@@ -19,6 +21,7 @@ from models import (
 from services import docstore
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
+AGENTIC_ROUTER_ENABLED = os.getenv("AGENTIC_ROUTER_ENABLED", "true").lower() == "true"
 
 
 @router.post("", response_model=ChatResponse)
@@ -35,17 +38,39 @@ async def chat(req: ChatRequest,x_user_id: str = Header(...)):
     chunks = docstore.get_chunks(req.doc_id)
     pages  = docstore.get_pages(req.doc_id)
 
-    # ── Run LangGraph pipeline ────────────────────────────────────────────
-    # Lazy import keeps startup memory low (langgraph not loaded until first call)
-    from services.langgraph_chat import run_chat_graph
+    # ── Run pipeline (feature-gated agentic router with safe fallback) ───
+    if AGENTIC_ROUTER_ENABLED:
+        try:
+            # Lazy import keeps startup memory low.
+            from services.agentic_chat import run_agentic_chat
 
-    result = run_chat_graph(
-        doc_id=req.doc_id,
-        query=req.query,
-        chunks_all=chunks,
-        pages_all=pages,
-        doc_info=info,
-    )
+            result = run_agentic_chat(
+                doc_id=req.doc_id,
+                query=req.query,
+                chunks_all=chunks,
+                pages_all=pages,
+                doc_info=info,
+            )
+        except Exception as e:
+            print(f"[Chat Router] Agentic path failed, falling back to LangGraph: {e}")
+            from services.langgraph_chat import run_chat_graph
+            result = run_chat_graph(
+                doc_id=req.doc_id,
+                query=req.query,
+                chunks_all=chunks,
+                pages_all=pages,
+                doc_info=info,
+            )
+    else:
+        # Existing behavior when feature disabled.
+        from services.langgraph_chat import run_chat_graph
+        result = run_chat_graph(
+            doc_id=req.doc_id,
+            query=req.query,
+            chunks_all=chunks,
+            pages_all=pages,
+            doc_info=info,
+        )
 
     answer            = result["answer"]
     query_type        = result["query_type"] or QueryType.CONCEPT
